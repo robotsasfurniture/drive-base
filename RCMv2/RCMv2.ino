@@ -1,14 +1,53 @@
-//   This program is template code for programming small esp32 powered wifi controlled robots.
-//   https://github.com/rcmgames/RCMv2
-//   for information about the electronics, see the link at the top of this page: https://github.com/RCMgames
-#include "rcm.h" //defines pins
-#include <ESP32_easy_wifi_data.h> //https://github.com/joshua-8/ESP32_easy_wifi_data >=v1.0.0
-#include <JMotor.h> //https://github.com/joshua-8/JMotor
+/**
+DRIVE BASE - ROBOTS AS FURNITURE
+by joshua-8 (joshuaphelps127@gmail.com) fall 2023 for Professor Ian Gonsher's Robots as Furniture project at Brown University
+this program controls a mecanum drive base for the robots as furniture project
+this program is based on the RCMv2 template https://github.com/rcmgames/rcmv2
+this program can be controlled with the https://github.comrcmgames/rcmds driver station
+*/
+#define ONBOARD_LED 13
+#define batMonitorPin 36
+
+boolean enabled = false;
+boolean wasEnabled = false;
+
+#include <ESP32_easy_wifi_data.h> //communication with driver station //https://github.com/joshua-8/ESP32_easy_wifi_data v1.1.1
+#include <JMotor.h> //https://github.com/joshua-8/JMotor //controlling motors //TODO: version
+#include <ros.h> //communication with raspberry pi //https://github.com/frankjoshua/rosserial_arduino_lib v0.9.1
 
 const int dacUnitsPerVolt = 380; // increasing this number decreases the calculated voltage
-JVoltageCompMeasure<10> voltageComp = JVoltageCompMeasure<10>(batMonitorPin, dacUnitsPerVolt);
-// set up motors and anything else you need here
-// https://github.com/joshua-8/JMotor/wiki/How-to-set-up-a-drivetrain
+
+const int encoderTicksPerRev = 2340;
+
+JTwoDTransform robotToWheelScalar = { 1, 1, 1 }; // adjust until it converts robot speed in your chosen units to wheel rotations (increasing numbers makes robot faster)
+
+JVoltageCompMeasure<10> voltageComp = JVoltageCompMeasure<10>(batMonitorPin, dacUnitsPerVolt); // measures the battery voltage
+JMotorDriverEsp32L293 frMotorDriver = JMotorDriverEsp32L293(1, 1, 1, 1, true, false, false, 8000, 12); // controls the motor drivers
+JMotorDriverEsp32L293 flMotorDriver = JMotorDriverEsp32L293(2, 2, 2, 2, true, false, false, 8000, 12);
+JMotorDriverEsp32L293 blMotorDriver = JMotorDriverEsp32L293(3, 3, 3, 3, true, false, false, 8000, 12);
+JMotorDriverEsp32L293 brMotorDriver = JMotorDriverEsp32L293(4, 4, 4, 4, true, false, false, 8000, 12);
+JEncoderSingleAttachInterrupt frEncoder = JEncoderSingleAttachInterrupt(5, (float)1 / encoderTicksPerRev, false, 200000, 25, FALLING); // reads the encoders
+JEncoderSingleAttachInterrupt flEncoder = JEncoderSingleAttachInterrupt(6, (float)1 / encoderTicksPerRev, false, 200000, 25, FALLING);
+JEncoderSingleAttachInterrupt blEncoder = JEncoderSingleAttachInterrupt(7, (float)1 / encoderTicksPerRev, false, 200000, 25, FALLING);
+JEncoderSingleAttachInterrupt brEncoder = JEncoderSingleAttachInterrupt(8, (float)1 / encoderTicksPerRev, false, 200000, 25, FALLING);
+JMotorCompStandardConfig frMotorConfig = JMotorCompStandardConfig(3, .55, 5, 1.60, 6.75, 2.75, 100); // converts from motor speed to voltage
+JMotorCompStandardConfig flMotorConfig = JMotorCompStandardConfig(3, .55, 5, 1.60, 6.75, 2.75, 100);
+JMotorCompStandardConfig blMotorConfig = JMotorCompStandardConfig(3, .55, 5, 1.60, 6.75, 2.75, 100);
+JMotorCompStandardConfig brMotorConfig = JMotorCompStandardConfig(3, .55, 5, 1.60, 6.75, 2.75, 100);
+JMotorCompStandard frMotorCompensator = JMotorCompStandard(voltageComp, frMotorConfig); // converts from voltage to motor driver input: fraction of battery voltage
+JMotorCompStandard flMotorCompensator = JMotorCompStandard(voltageComp, flMotorConfig);
+JMotorCompStandard blMotorCompensator = JMotorCompStandard(voltageComp, blMotorConfig);
+JMotorCompStandard brMotorCompensator = JMotorCompStandard(voltageComp, brMotorConfig);
+JControlLoopBasic frCtrlLoop = JControlLoopBasic(7); // proportional control loop
+JControlLoopBasic flCtrlLoop = JControlLoopBasic(7);
+JControlLoopBasic blCtrlLoop = JControlLoopBasic(7);
+JControlLoopBasic brCtrlLoop = JControlLoopBasic(7);
+JMotorControllerClosed frMotor = JMotorControllerClosed(frMotorDriver, frMotorCompensator, frEncoder, frCtrlLoop); // motor controller class combines everything
+JMotorControllerClosed flMotor = JMotorControllerClosed(flMotorDriver, flMotorCompensator, flEncoder, flCtrlLoop);
+JMotorControllerClosed blMotor = JMotorControllerClosed(blMotorDriver, blMotorCompensator, blEncoder, blCtrlLoop);
+JMotorControllerClosed brMotor = JMotorControllerClosed(brMotorDriver, brMotorCompensator, brEncoder, brCtrlLoop);
+JDrivetrainMecanum drivetrain = JDrivetrainMecanum(frMotor, flMotor, blMotor, brMotor, robotToWheelScalar); // drivetrain converts from robot speed to motor speeds
+JDrivetrainControllerBasic drivetrainController = JDrivetrainControllerBasic(drivetrain, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }); // provides acceleration limiting
 
 void Enabled()
 {
@@ -18,11 +57,13 @@ void Enabled()
 void Enable()
 {
     // turn on outputs
+    drivetrainController.enable();
 }
 
 void Disable()
 {
     // shut off all outputs
+    drivetrainController.disable();
 }
 
 void PowerOn()
@@ -32,23 +73,23 @@ void PowerOn()
 
 void Always()
 {
-    // always runs if void loop is running, JMotor run() functions should be put here
-    // (but only the "top level", for example if you call drivetrainController.run() you shouldn't also call motorController.run())
+    // always runs if void loop is running, top level JMotor run() functions should be put here
+    drivetrain.run();
 
     delay(1);
 }
 
 void configWifi()
 {
-    EWD::mode = EWD::Mode::connectToNetwork;
-    EWD::routerName = "router";
-    EWD::routerPassword = "password";
-    EWD::routerPort = 25210;
+    // EWD::mode = EWD::Mode::connectToNetwork;
+    // EWD::routerName = "router";
+    // EWD::routerPassword = "password";
+    // EWD::routerPort = 25210;
 
-    // EWD::mode = EWD::Mode::createAP;
-    // EWD::APName = "rcm0";
-    // EWD::APPassword = "rcmPassword";
-    // EWD::APPort = 25210;
+    EWD::mode = EWD::Mode::createAP;
+    EWD::APName = "table";
+    EWD::APPassword = "Gonsher";
+    EWD::APPort = 25210;
 }
 
 void WifiDataToParse()
