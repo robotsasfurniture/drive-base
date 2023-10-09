@@ -1,8 +1,7 @@
-# DRIVE BASE - ROBOTS AS FURNITURE
+### DRIVE BASE - ROBOTS AS FURNITURE
 
-### open in VSCode (using [PlatformIO](https://platformio.org/platformio-ide)), or use the Arduino IDE.
+open in VSCode (using [PlatformIO](https://platformio.org/platformio-ide)), or use the Arduino IDE.
 
-### this code controls a mecanum drive base for the robots as furniture project
+this code controls a mecanum drive base for the robots as furniture project
 
-### this program is based on the RCMv2 template
-https://github.com/rcmgames/rcmv2
+this program is based on the RCMv2 template: https://github.com/rcmgames/rcmv2
