@@ -4,4 +4,5 @@ open in VSCode (using [PlatformIO](https://platformio.org/platformio-ide)), or u
 
 this code controls a mecanum drive base for the robots as furniture project
 
-this program is based on the RCMv2 template: https://github.com/rcmgames/rcmv2
+this program is based on the [RCMv2 wifi controlled robot template](https://github.com/rcmgames/rcmv2) amd uses the [JMotor library](https://github.com/joshua-8/JMotor) for controlling the motors of the drivebase
+
