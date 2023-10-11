@@ -74,7 +74,7 @@ void PowerOn()
 void Always()
 {
     // always runs if void loop is running, top level JMotor run() functions should be put here
-    drivetrain.run();
+    drivetrainController.run();
 
     delay(1);
 }
