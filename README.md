@@ -1,8 +1,15 @@
-### DRIVE BASE - ROBOTS AS FURNITURE
+# RCMv2
 
-open in VSCode (using [PlatformIO](https://platformio.org/platformio-ide)), or use the Arduino IDE.
+### open in VSCode (using [PlatformIO](https://platformio.org/platformio-ide)), or use the Arduino IDE.
 
-this code controls a mecanum drive base for the robots as furniture project
+### this code controls a mechanum wheel drivebase for the robots as furniture project
 
-this program is based on the [RCMv2 wifi controlled robot template](https://github.com/rcmgames/rcmv2) amd uses the [JMotor library](https://github.com/joshua-8/JMotor) for controlling the motors of the drivebase
+Based on the following programs written by Joshua
+    https://github.com/rcmgames/rcmv2
+    https://github.com/joshua-8/lab4bot
+    https://github.com/joshua-8/JMotor
+
+
+V1.0 by Joshua Phelps (joshuaphelps127@gmail.com)
+    Remote control over wifi from https://github.com/robotsasfurniture/RCMDS 
 
