@@ -10,13 +10,13 @@ JTwoDTransform robotToWheelScalar = { 1, 1, 1 }; // adjust until it converts rob
 #define blEncPins 36, 39
 #define flEncPins 19, 27
 #define frEncPins 22, 34
-#define brEncPins 23, 21 // one pin bad
+#define brEncPins 23, 21
 
 // byte _pinPosCh, byte _pinPos, byte _pinNeg, byte _pinNegCh
 #define blMotPins 8, 25, 26, 9
 #define flMotPins 10, 33, 32, 11
-#define frMotPins 12, 5, 18, 13
-#define brMotPins 14, 16, 17, 15
+#define frMotPins 12, 16, 17, 13
+#define brMotPins 14, 5, 18, 15
 
 JVoltageCompMeasure<10> voltageComp = JVoltageCompMeasure<10>(batMonitorPin, dacUnitsPerVolt);
 
